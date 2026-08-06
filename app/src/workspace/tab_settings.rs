@@ -310,8 +310,10 @@ settings::macros::implement_setting_for_enum!(
     rename_all = "snake_case"
 )]
 pub enum VerticalTabsViewMode {
-    #[default]
     Compact,
+    /// Expanded rows show more session metadata — preferred for the
+    /// sidebar-first workspace layout (Limux-style).
+    #[default]
     Expanded,
 }
 
@@ -342,8 +344,10 @@ settings::macros::implement_setting_for_enum!(
     rename_all = "snake_case"
 )]
 pub enum VerticalTabsDisplayGranularity {
-    #[default]
     Panes,
+    /// One row per tab/session. Nested panes stay as in-tab multiplex;
+    /// the sidebar stays a workspace navigator rather than a pane dump.
+    #[default]
     Tabs,
 }
 
@@ -499,7 +503,8 @@ define_settings_group!(TabSettings, settings: [
     },
     use_vertical_tabs: UseVerticalTabs {
         type: bool,
-        default: false,
+        // Fork default: sidebar-first layout (Limux-style workspaces), not top tabs.
+        default: true,
         supported_platforms: SupportedPlatforms::ALL,
         sync_to_cloud: SyncToCloud::Globally(RespectUserSyncSetting::Yes),
         surface: settings::SettingSurfaces::GUI,
@@ -509,7 +514,8 @@ define_settings_group!(TabSettings, settings: [
     },
     show_vertical_tab_panel_in_restored_windows: ShowVerticalTabPanelInRestoredWindows {
         type: bool,
-        default: false,
+        // Keep the workspace sidebar present after session restore.
+        default: true,
         supported_platforms: SupportedPlatforms::ALL,
         sync_to_cloud: SyncToCloud::Globally(RespectUserSyncSetting::Yes),
         surface: settings::SettingSurfaces::GUI,
@@ -519,7 +525,8 @@ define_settings_group!(TabSettings, settings: [
     },
     hide_title_bar_search_bar_in_vertical_tabs: HideTitleBarSearchBarInVerticalTabs {
         type: bool,
-        default: false,
+        // Cleaner chrome: search lives in the sidebar control bar / command palette.
+        default: true,
         supported_platforms: SupportedPlatforms::ALL,
         sync_to_cloud: SyncToCloud::Globally(RespectUserSyncSetting::Yes),
         surface: settings::SettingSurfaces::GUI,

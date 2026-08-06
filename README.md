@@ -33,6 +33,10 @@
 
 [Warp](https://www.warp.dev) is an agentic development environment, born out of the terminal. Use Warp's built-in coding agent, or bring your own CLI agent (Claude Code, Codex, Gemini CLI, and others).
 
+### Fork: sidebar workspaces
+
+This fork (`krisyotam/warp`) defaults to a **Limux-style workspace sidebar** instead of the stock top tab strip: workspaces on the left, terminals multiplexed inside each session. Design notes and roadmap: [`docs/sidebar-workspaces.md`](docs/sidebar-workspaces.md).
+
 ## Installation
 
 You can [download Warp](https://www.warp.dev/download) and [read our docs](https://docs.warp.dev/) for platform-specific instructions.

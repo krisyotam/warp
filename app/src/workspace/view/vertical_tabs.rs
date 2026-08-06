@@ -84,30 +84,36 @@ use crate::workspace::{
 };
 use crate::{FeatureFlag, send_telemetry_from_app_ctx};
 
-const PANEL_WIDTH: f32 = 248.;
-const MIN_PANEL_WIDTH: f32 = 200.;
+// Sidebar-first workspace chrome (Limux-inspired, denser and quieter than the
+// default top-tab strip). Tuned for a navigator that carries workspaces, with
+// terminals multiplexed inside each workspace session.
+const PANEL_WIDTH: f32 = 264.;
+const MIN_PANEL_WIDTH: f32 = 220.;
 const MAX_PANEL_WIDTH_RATIO: f32 = 0.5;
 const DETAIL_SIDECAR_SECTION_PADDING: f32 = 12.;
 const DETAIL_SIDECAR_SECTION_GAP: f32 = 4.;
-const GROUP_HEADER_VERTICAL_PADDING: f32 = 4.;
-const GROUP_HORIZONTAL_PADDING: f32 = 8.;
-const GROUP_BODY_BOTTOM_PADDING: f32 = 8.;
-const GROUP_ITEM_SPACING: f32 = 4.;
-const TABS_MODE_ITEM_SPACING: f32 = 4.;
+const GROUP_HEADER_VERTICAL_PADDING: f32 = 6.;
+const GROUP_HORIZONTAL_PADDING: f32 = 10.;
+const GROUP_BODY_BOTTOM_PADDING: f32 = 10.;
+const GROUP_ITEM_SPACING: f32 = 3.;
+const TABS_MODE_ITEM_SPACING: f32 = 3.;
 const GROUP_ACTION_BUTTON_ICON_SIZE: f32 = 12.;
 const TAB_GROUP_HEADER_ACTION_ICON_SIZE: f32 = 14.;
 const PIN_INDICATOR_ICON_SIZE: f32 = 16.;
 const PIN_INDICATOR_CORNER_INSET: f32 = 6.;
 const GROUP_ACTION_BUTTON_PADDING: f32 = 2.;
 const GROUP_ACTION_BUTTON_GAP: f32 = 2.;
-const ROW_CORNER_RADIUS: f32 = 4.;
-const TAB_GROUP_MEMBER_INDENT: f32 = 12.;
+const ROW_CORNER_RADIUS: f32 = 8.;
+const TAB_GROUP_MEMBER_INDENT: f32 = 14.;
 const TAB_GROUP_ICON_SIZE: f32 = 16.;
-const TAB_GROUP_CONTENT_INSET: f32 = 4.;
+const TAB_GROUP_CONTENT_INSET: f32 = 6.;
 const BADGE_ICON_SIZE: f32 = 12.;
 const DETAIL_SIDECAR_DEFAULT_WIDTH: f32 = 320.;
 const DETAIL_SIDECAR_MIN_WIDTH: f32 = 240.;
-const DETAIL_SIDECAR_CORNER_RADIUS: f32 = 4.;
+const DETAIL_SIDECAR_CORNER_RADIUS: f32 = 8.;
+const SIDEBAR_SECTION_LABEL_SIZE: f32 = 11.;
+const SIDEBAR_EMPTY_TITLE_SIZE: f32 = 13.;
+const SIDEBAR_EMPTY_BODY_SIZE: f32 = 12.;
 /// Fixed height of the metadata row (line 3 in expanded mode). Matches the passive badge height
 /// so the row doesn't resize when badges are toggled.
 const METADATA_ROW_HEIGHT: f32 = BADGE_ICON_SIZE + 2.;
@@ -1246,11 +1252,11 @@ impl VerticalTabsPanelState {
     }
 }
 
-const CONTROL_BAR_VERTICAL_PADDING: f32 = 4.;
-const CONTROL_BAR_SPACING: f32 = 4.;
+const CONTROL_BAR_VERTICAL_PADDING: f32 = 8.;
+const CONTROL_BAR_SPACING: f32 = 6.;
 const SEARCH_ICON_SIZE: f32 = 12.;
-const SEARCH_BAR_HEIGHT: f32 = 24.;
-const CONTROL_BAR_BUTTON_RADIUS: Radius = Radius::Pixels(4.);
+const SEARCH_BAR_HEIGHT: f32 = 28.;
+const CONTROL_BAR_BUTTON_RADIUS: Radius = Radius::Pixels(8.);
 const SPLIT_BUTTON_HEIGHT: f32 = SEARCH_BAR_HEIGHT;
 pub(super) const VERTICAL_TABS_ADD_TAB_POSITION_ID: &str = "vertical_tabs_add_tab_button";
 pub(super) const VERTICAL_TABS_SETTINGS_BUTTON_POSITION_ID: &str = "vertical_tabs_settings_button";
@@ -1388,6 +1394,17 @@ fn render_control_bar(
     let appearance = Appearance::as_ref(app);
     let theme = appearance.theme();
     let sub_text = theme.sub_text_color(theme.background());
+    let main_text = theme.main_text_color(theme.background());
+    let ui_font = appearance.ui_font_family();
+
+    // Section label — frames the sidebar as a workspace navigator, not a tab strip.
+    let section_label = Text::new_inline("Workspaces", ui_font, SIDEBAR_SECTION_LABEL_SIZE)
+        .with_color(main_text.into())
+        .with_style(Properties {
+            weight: Weight::Semibold,
+            ..Default::default()
+        })
+        .finish();
 
     let search_icon = ConstrainedBox::new(WarpIcon::Search.to_warpui_icon(sub_text).finish())
         .with_width(SEARCH_ICON_SIZE)
@@ -1404,31 +1421,46 @@ fn render_control_bar(
     .build()
     .finish();
 
-    let search_bar = Flex::row()
+    let search_row = Flex::row()
         .with_main_axis_size(MainAxisSize::Max)
         .with_cross_axis_alignment(CrossAxisAlignment::Center)
-        .with_spacing(6.)
+        .with_spacing(8.)
         .with_child(search_icon)
         .with_child(Shrinkable::new(1., text_input).finish())
+        .finish();
+
+    let search_bar = Container::new(search_row)
+        .with_background(internal_colors::fg_overlay_2(theme))
+        .with_corner_radius(CornerRadius::with_all(CONTROL_BAR_BUTTON_RADIUS))
+        .with_padding(Padding::uniform(6.).with_left(10.).with_right(10.))
         .finish();
 
     let settings_button = render_settings_button(state, appearance);
     let new_tab_button = render_new_tab_button(state, workspace, appearance, app);
 
+    let header_row = Flex::row()
+        .with_main_axis_size(MainAxisSize::Max)
+        .with_cross_axis_alignment(CrossAxisAlignment::Center)
+        .with_spacing(CONTROL_BAR_SPACING)
+        .with_child(Shrinkable::new(1., section_label).finish())
+        .with_child(settings_button)
+        .with_child(new_tab_button)
+        .finish();
+
     Container::new(
-        Flex::row()
-            .with_main_axis_size(MainAxisSize::Max)
-            .with_cross_axis_alignment(CrossAxisAlignment::Center)
-            .with_spacing(CONTROL_BAR_SPACING)
-            .with_child(Shrinkable::new(1., search_bar).finish())
-            .with_child(settings_button)
-            .with_child(new_tab_button)
+        Flex::column()
+            .with_main_axis_size(MainAxisSize::Min)
+            .with_cross_axis_alignment(CrossAxisAlignment::Stretch)
+            .with_spacing(8.)
+            .with_child(header_row)
+            .with_child(search_bar)
             .finish(),
     )
     .with_padding(
         Padding::uniform(CONTROL_BAR_VERTICAL_PADDING)
             .with_left(GROUP_HORIZONTAL_PADDING)
-            .with_right(GROUP_HORIZONTAL_PADDING),
+            .with_right(GROUP_HORIZONTAL_PADDING)
+            .with_bottom(4.),
     )
     .finish()
 }
@@ -1609,12 +1641,12 @@ fn render_new_tab_button(
         let contents = if hover_state.is_hovered() {
             let tooltip = if let Some(sublabel) = tab_configs_keybinding.clone() {
                 ui_builder
-                    .tool_tip_with_sublabel("Tab configs".to_string(), sublabel)
+                    .tool_tip_with_sublabel("New workspace".to_string(), sublabel)
                     .build()
                     .finish()
             } else {
                 ui_builder
-                    .tool_tip("Tab configs".to_string())
+                    .tool_tip("New workspace".to_string())
                     .build()
                     .finish()
             };
@@ -1712,9 +1744,18 @@ fn render_vertical_tabs_panel(
     };
     // Wrap the panel in a `Hoverable` so right-clicking the empty area of the
     // vertical tabs panel opens the tab configs dropdown.
-    let inner = Hoverable::new(state.panel_right_click_mouse_state.clone(), |_| {
+    let edge_border = match side {
+        super::PanelPosition::Left => Border::right(1.),
+        super::PanelPosition::Right => Border::left(1.),
+    }
+    .with_border_fill(theme.outline().with_opacity(40));
+
+    let inner = Hoverable::new(state.panel_right_click_mouse_state.clone(), move |_| {
+        // Slightly deeper surface than the terminal so the sidebar reads as
+        // chrome, not another pane of content.
         Container::new(panel_with_popup)
             .with_background(internal_colors::fg_overlay_1(theme))
+            .with_border(edge_border)
             .finish()
     })
     .on_click(|ctx, _, _| {
@@ -1754,13 +1795,35 @@ fn render_groups(
     let theme = appearance.theme();
 
     if workspace.tabs.is_empty() {
-        return Container::new(
-            Text::new_inline("No tabs open", appearance.ui_font_family(), 12.)
-                .with_color(theme.sub_text_color(theme.background()).into())
+        let sub = theme.sub_text_color(theme.background());
+        let main = theme.main_text_color(theme.background());
+        let font = appearance.ui_font_family();
+        let empty = Flex::column()
+            .with_main_axis_size(MainAxisSize::Min)
+            .with_cross_axis_alignment(CrossAxisAlignment::Start)
+            .with_spacing(6.)
+            .with_child(
+                Text::new_inline("No workspaces yet", font, SIDEBAR_EMPTY_TITLE_SIZE)
+                    .with_color(main.into())
+                    .with_style(Properties {
+                        weight: Weight::Semibold,
+                        ..Default::default()
+                    })
+                    .finish(),
+            )
+            .with_child(
+                Text::new_inline(
+                    "Add a terminal workspace, then split or tab inside it to multiplex.",
+                    font,
+                    SIDEBAR_EMPTY_BODY_SIZE,
+                )
+                .with_color(sub.into())
                 .finish(),
-        )
-        .with_padding(Padding::uniform(12.))
-        .finish();
+            )
+            .finish();
+        return Container::new(empty)
+            .with_padding(Padding::uniform(14.))
+            .finish();
     }
 
     let resolved_mode = resolve_vertical_tabs_mode(app);
