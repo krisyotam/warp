@@ -310,10 +310,10 @@ settings::macros::implement_setting_for_enum!(
     rename_all = "snake_case"
 )]
 pub enum VerticalTabsViewMode {
-    Compact,
-    /// Expanded rows show more session metadata — preferred for the
-    /// sidebar-first workspace layout (Limux-style).
+    /// Single-line terminal navigation for dense remote-machine lists.
     #[default]
+    Compact,
+    /// Expanded rows show more session metadata.
     Expanded,
 }
 

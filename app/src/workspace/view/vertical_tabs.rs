@@ -92,18 +92,18 @@ const MIN_PANEL_WIDTH: f32 = 220.;
 const MAX_PANEL_WIDTH_RATIO: f32 = 0.5;
 const DETAIL_SIDECAR_SECTION_PADDING: f32 = 12.;
 const DETAIL_SIDECAR_SECTION_GAP: f32 = 4.;
-const GROUP_HEADER_VERTICAL_PADDING: f32 = 6.;
+const GROUP_HEADER_VERTICAL_PADDING: f32 = 3.;
 const GROUP_HORIZONTAL_PADDING: f32 = 10.;
-const GROUP_BODY_BOTTOM_PADDING: f32 = 10.;
-const GROUP_ITEM_SPACING: f32 = 3.;
-const TABS_MODE_ITEM_SPACING: f32 = 3.;
+const GROUP_BODY_BOTTOM_PADDING: f32 = 4.;
+const GROUP_ITEM_SPACING: f32 = 1.;
+const TABS_MODE_ITEM_SPACING: f32 = 1.;
 const GROUP_ACTION_BUTTON_ICON_SIZE: f32 = 12.;
 const TAB_GROUP_HEADER_ACTION_ICON_SIZE: f32 = 14.;
 const PIN_INDICATOR_ICON_SIZE: f32 = 16.;
 const PIN_INDICATOR_CORNER_INSET: f32 = 6.;
 const GROUP_ACTION_BUTTON_PADDING: f32 = 2.;
 const GROUP_ACTION_BUTTON_GAP: f32 = 2.;
-const ROW_CORNER_RADIUS: f32 = 8.;
+const ROW_CORNER_RADIUS: f32 = 4.;
 const TAB_GROUP_MEMBER_INDENT: f32 = 14.;
 const TAB_GROUP_ICON_SIZE: f32 = 16.;
 const TAB_GROUP_CONTENT_INSET: f32 = 6.;
@@ -2817,13 +2817,22 @@ fn render_grouped_tabs_header(
     let main_text_color = theme.main_text_color(theme.background());
     let sub_text_color = theme.sub_text_color(theme.background());
     let group_id = group.id;
+    let compact = matches!(
+        *TabSettings::as_ref(app).vertical_tabs_view_mode.value(),
+        VerticalTabsViewMode::Compact
+    );
+    let group_icon_size = if compact {
+        16.
+    } else {
+        VERTICAL_TABS_ICON_SIZE
+    };
 
     // Collapsed groups show the icon collage (same component as horizontal tab
     // groups) in place of the chevron, sized to VERTICAL_TABS_ICON_SIZE so
     // the 2-icon variant matches the tab Summary Pair layout exactly.
     let tab_group_icon = if is_collapsed {
         let kinds = collapsed_member_kinds.unwrap_or(&[]);
-        render_group_member_icon_collage(kinds, VERTICAL_TABS_ICON_SIZE, appearance)
+        render_group_member_icon_collage(kinds, group_icon_size, appearance)
     } else {
         let chevron_button = render_tab_group_header_icon_button(
             WarpIcon::ChevronDown,
@@ -2843,8 +2852,8 @@ fn render_grouped_tabs_header(
             .finish()
     };
     let tab_group_icon = ConstrainedBox::new(tab_group_icon)
-        .with_width(VERTICAL_TABS_ICON_SIZE)
-        .with_height(VERTICAL_TABS_ICON_SIZE)
+        .with_width(group_icon_size)
+        .with_height(group_icon_size)
         .finish();
 
     let title_element: Box<dyn Element> =
@@ -2869,11 +2878,11 @@ fn render_grouped_tabs_header(
         .with_clip(ClipConfig::ellipsis())
         .with_color(sub_text_color.into())
         .finish();
-    let text_column: Box<dyn Element> = Flex::column()
+    let text_column: Box<dyn Element> = (if compact { Flex::row() } else { Flex::column() })
         .with_main_axis_size(MainAxisSize::Min)
         .with_cross_axis_alignment(CrossAxisAlignment::Start)
-        .with_spacing(1.)
-        .with_child(title_element)
+        .with_spacing(if compact { 6. } else { 1. })
+        .with_child(Shrinkable::new(1., title_element).finish())
         .with_child(subtitle)
         .finish();
 
@@ -2946,7 +2955,19 @@ fn render_grouped_tabs_header(
             WarpThemeFill::Solid(ColorU::transparent_black())
         };
         let mut container = Container::new(row)
-            .with_padding(Padding::uniform(GROUP_HORIZONTAL_PADDING))
+            .with_padding(
+                Padding::uniform(GROUP_HORIZONTAL_PADDING)
+                    .with_top(if compact {
+                        3.
+                    } else {
+                        GROUP_HORIZONTAL_PADDING
+                    })
+                    .with_bottom(if compact {
+                        3.
+                    } else {
+                        GROUP_HORIZONTAL_PADDING
+                    }),
+            )
             .with_corner_radius(CornerRadius::with_all(Radius::Pixels(ROW_CORNER_RADIUS)))
             .with_border(Border::all(1.).with_border_fill(border_fill));
         if let Some(color) = group_color_fill {
@@ -7218,9 +7239,12 @@ fn render_compact_pane_row(props: PaneProps<'_>, app: &AppContext) -> Box<dyn El
     let font_family = appearance.ui_font_family();
     let has_indicator = props.typed.badge(app).is_some() || has_unread_activity(&props.typed, app);
 
-    let icon = render_pane_icon_with_status(
+    let icon = render_icon_with_status(
         resolve_icon_with_status_variant(&props.typed, &props.title, appearance, app),
+        16.,
+        0.,
         theme,
+        theme.background(),
     );
 
     let primary_info = *TabSettings::as_ref(app).vertical_tabs_primary_info.value();
@@ -7361,6 +7385,13 @@ fn render_compact_pane_row(props: PaneProps<'_>, app: &AppContext) -> Box<dyn El
             (title, subtitle)
         };
 
+    // Compact terminal navigation is a single line; metadata remains in the hover details.
+    let subtitle_element = if matches!(props.typed, TypedPane::Terminal(_)) {
+        None
+    } else {
+        subtitle_element
+    };
+
     // Title row with optional indicator
     let title_row = if has_indicator {
         Flex::row()
@@ -7404,7 +7435,13 @@ fn render_compact_pane_row(props: PaneProps<'_>, app: &AppContext) -> Box<dyn El
         .with_child(Shrinkable::new(1., text_col.finish()).finish())
         .finish();
 
-    render_pane_row_element(props, Padding::uniform(8.), true, content, theme)
+    render_pane_row_element(
+        props,
+        Padding::uniform(3.).with_left(8.).with_right(8.),
+        true,
+        content,
+        theme,
+    )
 }
 
 impl Workspace {

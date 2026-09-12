@@ -382,6 +382,8 @@ pub fn get_app_state(app: &AppContext) -> AppState {
                 quake_mode_id.map(|id| id == window_id).unwrap_or(false),
                 app,
             );
+            #[cfg(feature = "local_fs")]
+            crate::launch_configs::permanent_pins::save_workspace(ws, &snapshot, app);
             if !snapshot.tabs.is_empty() {
                 windows.push(snapshot);
             }

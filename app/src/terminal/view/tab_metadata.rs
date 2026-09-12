@@ -42,6 +42,23 @@ impl TerminalView {
             })
     }
 
+    /// Capture an active interactive SSH connection when the user pins its tab.
+    /// Called after workspace snapshots have released all terminal model locks.
+    pub fn startup_ssh_command(&self) -> Option<String> {
+        let model = self.model.lock();
+        model.block_list().blocks().iter().find_map(|block| {
+            if block.finished() || block.is_static() {
+                return None;
+            }
+            let command = block.command_to_string();
+            // Never turn a compound shell command into an automatic startup action.
+            if command.contains([';', '|', '&', '\n', '`']) || command.contains("$(") {
+                return None;
+            }
+            crate::terminal::ssh::util::parse_interactive_ssh_command(&command).map(|_| command)
+        })
+    }
+
     pub fn last_completed_command_text(&self) -> Option<String> {
         let model = self.model.lock();
         model.block_list().blocks().iter().rev().find_map(|block| {

@@ -187,6 +187,9 @@ pub struct TabData {
     pub in_multi_selection: bool,
     /// True when this tab is pinned to the front of the tab list.
     pub pinned: bool,
+    /// Identity and original launch layout for permanent startup pins.
+    pub startup_pin_id: uuid::Uuid,
+    pub startup_layout: Option<crate::launch_configs::launch_config::PaneTemplateType>,
 }
 
 const TAB_COLOR_ICON_PATH: &str = "bundled/svg/ellipse.svg";
@@ -207,6 +210,8 @@ impl TabData {
             group_id: None,
             in_multi_selection: false,
             pinned: false,
+            startup_pin_id: uuid::Uuid::new_v4(),
+            startup_layout: None,
         }
     }
 

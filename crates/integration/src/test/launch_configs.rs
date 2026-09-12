@@ -171,6 +171,10 @@ pub fn test_launch_config_single_child_branch() -> Builder {
             windows: vec![WindowTemplate {
                 active_tab_index: Some(0),
                 tabs: vec![TabTemplate {
+                    group: None,
+                    pinned: false,
+                    startup_pin_id: None,
+                    restored_pane_id: None,
                     title: Some("First tab".to_owned()),
                     layout: PaneTemplateType::PaneBranchTemplate {
                         split_direction: SplitDirection::Horizontal,
@@ -301,6 +305,10 @@ pub fn test_with_launch_config_with_active_tab_index() -> Builder {
                 active_tab_index: Some(1),
                 tabs: vec![
                     TabTemplate {
+                        group: None,
+                        pinned: false,
+                        startup_pin_id: None,
+                        restored_pane_id: None,
                         title: None,
                         layout: PaneTemplateType::PaneBranchTemplate {
                             split_direction: SplitDirection::Horizontal,
@@ -360,6 +368,10 @@ pub fn test_with_launch_config_with_active_pane() -> Builder {
             windows: vec![WindowTemplate {
                 active_tab_index: Some(0),
                 tabs: vec![TabTemplate {
+                    group: None,
+                    pinned: false,
+                    startup_pin_id: None,
+                    restored_pane_id: None,
                     title: None,
                     layout: PaneTemplateType::PaneBranchTemplate {
                         split_direction: SplitDirection::Horizontal,
@@ -439,6 +451,10 @@ pub fn test_with_launch_config_with_no_active_pane() -> Builder {
             windows: vec![WindowTemplate {
                 active_tab_index: Some(0),
                 tabs: vec![TabTemplate {
+                    group: None,
+                    pinned: false,
+                    startup_pin_id: None,
+                    restored_pane_id: None,
                     title: None,
                     layout: PaneTemplateType::PaneBranchTemplate {
                         split_direction: SplitDirection::Horizontal,

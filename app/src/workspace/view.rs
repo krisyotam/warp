@@ -3871,6 +3871,26 @@ impl Workspace {
                     tab_template.title.clone(),
                     ctx,
                 );
+                let tab = &mut self.tabs[start_index + tab_index];
+                tab.startup_layout = Some(tab_template.layout_with_tab_commands());
+                tab.startup_pin_id = tab_template
+                    .startup_pin_id
+                    .unwrap_or_else(uuid::Uuid::new_v4);
+                tab.pinned = tab_template.pinned;
+                if let Some(group) = &tab_template.group {
+                    let group_id = TabGroupId(group.id);
+                    tab.group_id = Some(group_id);
+                    self.tab_groups.entry(group_id).or_insert_with(|| TabGroup {
+                        id: group_id,
+                        name: group.name.clone(),
+                        color: group
+                            .color
+                            .map_or(SelectedTabColor::Unset, SelectedTabColor::Color),
+                        collapsed: group.collapsed,
+                        pinned: group.pinned,
+                        draggable_state: Default::default(),
+                    });
+                }
                 self.tabs[start_index + tab_index].selected_color = tab_template
                     .color
                     .map_or(SelectedTabColor::Unset, SelectedTabColor::Color);

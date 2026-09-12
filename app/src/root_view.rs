@@ -713,6 +713,23 @@ fn on_gpu_driver_selected_callback() -> Option<Box<OnGPUDeviceSelected>> {
 }
 
 fn open_from_restored(arg: &OpenFromRestoredArg, ctx: &mut AppContext) {
+    #[cfg(feature = "local_fs")]
+    let startup_pins = crate::launch_configs::permanent_pins::load();
+    #[cfg(feature = "local_fs")]
+    let has_startup_pins = !startup_pins.is_empty();
+    #[cfg(not(feature = "local_fs"))]
+    let has_startup_pins = false;
+    #[cfg(feature = "local_fs")]
+    let restored_state = arg.app_state.clone().map(|mut state| {
+        if !startup_pins.is_empty() {
+            crate::launch_configs::permanent_pins::remove_restored_pins(&mut state, &startup_pins);
+        }
+        state
+    });
+    #[cfg(feature = "local_fs")]
+    let arg = &OpenFromRestoredArg {
+        app_state: restored_state,
+    };
     let global_resource_handles = GlobalResourceHandlesProvider::as_ref(ctx).get().clone();
     IntervalTimer::handle(ctx).update(ctx, |timer, _| {
         timer.mark_interval_end("HANDLING_OPEN_ACTION");
@@ -823,7 +840,7 @@ fn open_from_restored(arg: &OpenFromRestoredArg, ctx: &mut AppContext) {
 
             // If only the quake mode window was restored (which starts hidden), create a new normal
             // window so that something visible is created on startup.
-            if normal_window_count == 0 {
+            if normal_window_count == 0 && !has_startup_pins {
                 let window_settings = WindowSettings::as_ref(ctx);
                 let options = default_window_options(window_settings, ctx);
                 ctx.add_window(options, |ctx| {
@@ -871,6 +888,18 @@ fn open_from_restored(arg: &OpenFromRestoredArg, ctx: &mut AppContext) {
                 );
             }
         }
+    }
+    #[cfg(feature = "local_fs")]
+    if !startup_pins.is_empty() {
+        open_new_with_workspace_source(
+            NewWorkspaceSource::FromTemplate {
+                window_template: launch_config::WindowTemplate {
+                    active_tab_index: Some(0),
+                    tabs: startup_pins,
+                },
+            },
+            ctx,
+        );
     }
 }
 

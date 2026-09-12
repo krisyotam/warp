@@ -51,7 +51,19 @@ impl From<WindowSnapshot> for WindowTemplate {
             .into_iter()
             .enumerate()
             .filter_map(|(i, tab)| {
-                let tab = tab.try_into().ok()?;
+                let group_id = tab.group_id;
+                let mut tab: TabTemplate = tab.try_into().ok()?;
+                tab.group = snapshot
+                    .tab_groups
+                    .iter()
+                    .find(|group| Some(group.id) == group_id)
+                    .map(|group| TabGroupTemplate {
+                        id: group.id.0,
+                        name: group.name.clone(),
+                        collapsed: group.collapsed,
+                        pinned: group.pinned,
+                        color: group.color.resolve(None),
+                    });
 
                 if i == snapshot.active_tab_index {
                     active_tab_index = Some(num_valid_tabs);
@@ -180,12 +192,33 @@ where
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct TabTemplate {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub group: Option<TabGroupTemplate>,
+    #[serde(default)]
+    pub pinned: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub startup_pin_id: Option<uuid::Uuid>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub restored_pane_id: Option<Vec<u8>>,
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub title: Option<String>,
     pub layout: PaneTemplateType,
     #[serde(skip_serializing, default)]
     pub commands: Vec<CommandTemplate>,
     #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub color: Option<AnsiColorIdentifier>,
+}
+
+/// A folder shared by launch tabs with the same stable identity.
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
+pub struct TabGroupTemplate {
+    pub id: uuid::Uuid,
+    pub name: Option<String>,
+    #[serde(default)]
+    pub collapsed: bool,
+    #[serde(default)]
+    pub pinned: bool,
+    #[serde(default)]
     pub color: Option<AnsiColorIdentifier>,
 }
 
@@ -234,6 +267,10 @@ impl TryFrom<TabSnapshot> for TabTemplate {
     fn try_from(snapshot: TabSnapshot) -> Result<Self, ()> {
         let color = snapshot.color();
         Ok(Self {
+            group: None,
+            pinned: snapshot.pinned,
+            startup_pin_id: None,
+            restored_pane_id: None,
             title: snapshot.custom_title,
             layout: snapshot.root.try_into()?,
             commands: Vec::new(),
@@ -280,6 +317,10 @@ pub fn make_mock_single_window_launch_config() -> LaunchConfig {
             active_tab_index: Some(0),
             tabs: vec![
                 TabTemplate {
+                    group: None,
+                    pinned: false,
+                    startup_pin_id: None,
+                    restored_pane_id: None,
                     title: Some("First Tab".to_string()),
                     layout: PaneTemplateType::PaneTemplate {
                         is_focused: Some(true),
@@ -292,6 +333,10 @@ pub fn make_mock_single_window_launch_config() -> LaunchConfig {
                     color: None,
                 },
                 TabTemplate {
+                    group: None,
+                    pinned: false,
+                    startup_pin_id: None,
+                    restored_pane_id: None,
                     title: Some("Second Tab".to_string()),
                     layout: PaneTemplateType::PaneTemplate {
                         is_focused: Some(true),
